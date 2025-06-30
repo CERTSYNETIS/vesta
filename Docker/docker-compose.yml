@@ -1,0 +1,16 @@
+services:
+  vesta:
+    build:
+      context: ..
+      dockerfile: Docker/Dockerfile
+    image: vesta:1.0.0
+    container_name: vesta
+    ports:
+      - 443:5000
+    volumes:
+      - xxx:/vesta/ssl/cert.crt
+      - xxx:/vesta/ssl/cert.key
+      - xxx:/vesta/output
+    environment:
+      - vcenter=x.x.x.x
+      - secret_key=xxx

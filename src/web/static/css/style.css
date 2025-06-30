@@ -1,0 +1,193 @@
+/* Bootstrap 5 CSS and icons included */
+:root {
+    --colorPrimaryNormal: #00b3bb;
+    --colorPrimaryDark: #00979f;
+    --colorPrimaryGlare: #00cdd7;
+    --colorPrimaryHalf: #80d9dd;
+    --colorPrimaryQuarter: #bfecee;
+    --colorPrimaryEighth: #dff5f7;
+    --colorPrimaryPale: #f3f5f7;
+    --colorPrimarySeparator: #f3f5f7;
+    --colorPrimaryOutline: #dff5f7;
+    --colorButtonNormal: #00b3bb;
+    --colorButtonHover: #00cdd7;
+    --colorLinkNormal: #00979f;
+    --colorLinkHover: #00cdd7;
+  }
+  
+  .folder {
+    cursor: pointer;
+    
+}
+/*
+.folder::before {
+    content: "►";
+    padding-right: 5px;
+}
+
+
+.folder.open::before {
+    content: "▼";
+
+}*/
+
+.folder + ul {
+    display: none;
+    list-style-type: none;
+}
+
+.folder.open + ul {
+    display: block;
+    list-style-type: none;
+}
+
+li {
+  list-style-type: none;
+}
+
+.ul-vm {
+  cursor: pointer;
+  list-style-type: none;
+}
+
+.custom-file-btn {
+  cursor: pointer;
+  border: none;
+  background-color: transparent;
+}
+
+.download_files:hover {
+  cursor: pointer;
+}
+
+
+
+/**************************************************************/
+#drop-zone {
+  position:absolute;
+  border: 2px dashed rgba(0,0,0,.3);
+  border-radius: 20px;
+  font-family: Arial;
+  text-align: center;
+  position: relative;
+  line-height: 180px;
+  font-size: 20px;
+  color: rgba(0,0,0,.3);
+}
+
+  #drop-zone input {
+      /*Important*/
+      position: absolute;
+      /*Important*/
+      cursor: pointer;
+      left: 0px;
+      top: 0px;
+      opacity:0;
+  }
+
+  /*Important*/
+  #drop-zone.mouse-over {
+      border: 2px dashed rgba(0,0,0,.5);
+      color: rgba(0,0,0,.5);
+  }
+
+
+/*If you dont want the button*/
+#clickHere {
+  position: absolute;
+  cursor: pointer;
+  left: 50%;
+  top: 50%;
+  margin-left: -50px;
+  margin-top: 20px;
+  line-height: 26px;
+  color: white;
+  font-size: 12px;
+  width: 100px;
+  height: 26px;
+  border-radius: 4px;
+  background-color: #3b85c3;
+
+}
+
+  #clickHere:hover {
+      background-color: #4499DD;
+
+  }
+
+
+  .tree {
+  --spacing: 1.5rem;
+  --radius: 10px;
+}
+
+.tree li {
+  display: block;
+  position: relative;
+  padding-left: calc(2 * var(--spacing) - var(--radius) - 2px);
+}
+
+.tree ul {
+  margin-left: calc(var(--radius) - var(--spacing));
+  padding-left: 0;
+}
+
+.tree ul li {
+  border-left: 2px solid #ddd;
+}
+
+.tree ul li:last-child {
+  border-color: transparent;
+}
+
+.tree ul li::before {
+  content: '';
+  display: block;
+  position: absolute;
+  top: calc(var(--spacing) / -2);
+  left: -2px;
+  width: calc(var(--spacing) + 2px);
+  height: calc(var(--spacing) + 1px);
+  border: solid #ddd;
+  border-width: 0 0 2px 2px;
+}
+
+.tree summary {
+  display: block;
+  cursor: pointer;
+}
+
+.tree summary::marker,
+.tree summary::-webkit-details-marker {
+  display: none;
+}
+
+.tree summary:focus {
+  outline: none;
+}
+
+.tree summary:focus-visible {
+  outline: 1px dotted #000;
+}
+
+.tree li::after,
+.tree summary::before {
+  content: '';
+  display: block;
+  position: absolute;
+  top: calc(var(--spacing) / 2 - var(--radius));
+  left: calc(var(--spacing) - var(--radius) - 1px);
+  width: calc(2 * var(--radius));
+  height: calc(2 * var(--radius));
+  border-radius: 50%;
+  background: #ddd;
+}
+
+.tree .folder::before {
+  z-index: 1;
+  background: #5d7fa2 url('expand-collapse.svg') 0 0;
+}
+
+.tree .folder.open::before {
+  background-position: calc(-2 * var(--radius)) 0;
+}

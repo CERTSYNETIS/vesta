@@ -1,0 +1,722 @@
+{% extends 'base.html' %} {% block content %}
+
+<div class="row mt-3">
+  <div class="col-4">
+    <div class="row" style="align-items: center">
+      <div class="col-6">
+        <h1>Arborescence</h1>
+      </div>
+      
+    </div>
+
+    <ul class="tree">
+      {% macro render_tree(data) %} {% for key, value in data.items() %}
+      <li>
+        {% if value %}
+        <summary class="folder">{{ key }}</summary>
+        <ul>
+          {{ render_tree(value) }}
+        </ul>
+        {% else %}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          fill="black"
+          class="bi bi-pc-display-horizontal"
+          viewBox="0 0 16 16"
+        >
+          <path
+            d="M1.5 0A1.5 1.5 0 0 0 0 1.5v7A1.5 1.5 0 0 0 1.5 10H6v1H1a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-5v-1h4.5A1.5 1.5 0 0 0 16 8.5v-7A1.5 1.5 0 0 0 14.5 0zm0 1h13a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-7a.5.5 0 0 1 .5-.5M12 12.5a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0m2 0a.5.5 0 1 1 1 0 .5.5 0 0 1-1 0M1.5 12h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1 0-1M1 14.25a.25.25 0 0 1 .25-.25h5.5a.25.25 0 1 1 0 .5h-5.5a.25.25 0 0 1-.25-.25"
+          />
+        </svg>
+        <span class="ul-vm" onclick="get_vm_infos('{{ key }}')">{{ key }}</span>
+        {% endif %}
+      </li>
+      {% endfor %} {% endmacro %} {{ render_tree(data) }}
+    </ul>
+  </div>
+
+  <div class="col-8" style="right: 0">
+    <div class="col-10">
+      <div id="main_vm_infos" class="my-3 p-3 bg-white rounded box-shadow card">
+        <div class="card-body">
+          <h5 class="card-title">VM Informations</h5>
+          <div id="" class="row">
+            <p class="col-6">Name</p>
+            <p id="vm_infos_name" class="col-6"></p>
+          </div>
+          <div id="" class="row">
+            <p class="col-6">Guest</p>
+            <p id="vm_infos_guest" class="col-6">...</p>
+          </div>
+          <div id="" class="row">
+            <p class="col-6">State</p>
+            <p id="vm_infos_state" class="col-3">...</p>
+          </div>
+          <div id="" class="row">
+            <p class="col-6">Actions</p>
+            <p id="vm_infos_poweractions" class="col-3">
+              <span
+              class="badge text-bg-light"
+              onclick="startVM()"
+              style="cursor: pointer"
+                >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" width="16" height="16"><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80L0 432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg>
+              </span>
+              <span
+                class="badge text-bg-light"
+                onclick="stopVM()"
+                style="cursor: pointer"
+              >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="16" height="16"><path d="M288 32c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 224c0 17.7 14.3 32 32 32s32-14.3 32-32l0-224zM143.5 120.6c13.6-11.3 15.4-31.5 4.1-45.1s-31.5-15.4-45.1-4.1C49.7 115.4 16 181.8 16 256c0 132.5 107.5 240 240 240s240-107.5 240-240c0-74.2-33.8-140.6-86.6-184.6c-13.6-11.3-33.8-9.4-45.1 4.1s-9.4 33.8 4.1 45.1c38.9 32.3 63.5 81 63.5 135.4c0 97.2-78.8 176-176 176s-176-78.8-176-176c0-54.4 24.7-103.1 63.5-135.4z"/></svg>
+            </span>
+            </p>
+          </div>
+          <div id="" class="row">
+            <p class="col-6">Tools</p>
+            <p id="vm_infos_tools_version" class="col-6">...</p>
+          </div>
+          <div id="" class="row">
+            <p class="col-6">VM Login</p>
+            <div id="" class="col-6">
+              <input
+                type="text"
+                class="form-control col-6"
+                placeholder="Login"
+                id="vm_login"
+              />
+            </div>
+          </div>
+          <div id="" class="row">
+            <p class="col-6">VM Password</p>
+            <div id="" class="col-6">
+              <input
+                type="password"
+                class="form-control col-6"
+                placeholder="Password"
+                id="vm_password"
+              />
+            </div>
+          </div>
+          <div id="" class="row">
+            <p class="col-6">Path folder</p>
+            <div id="" class="col-6">
+              <input
+                type="text"
+                class="form-control col-6"
+                placeholder="Path"
+                id="vm_path"
+              />
+            </div>
+          </div>
+          <!-- ####################################################################################### -->
+        </div>
+      </div>
+
+      <div
+        class="my-3 p-3 bg-white rounded box-shadow card"
+        style="border: none"
+      >
+        <div
+          class="card-header"
+          style="border-bottom: none; background-color: #ffff"
+        >
+          <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link active"
+                id="upload_file_tab"
+                data-bs-toggle="tab"
+                data-bs-target="#upload-file-tab-pane"
+                type="button"
+                role="tab"
+                aria-controls="upload-file-tab-pane"
+                aria-selected="true"
+              >
+                Upload File
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link"
+                id="download_file_tab"
+                data-bs-toggle="tab"
+                data-bs-target="#download-file-tab-pane"
+                type="button"
+                role="tab"
+                aria-controls="download-file-tab-pane"
+                aria-selected="false"
+              >
+                Download File
+              </button>
+            </li>
+          </ul>
+        </div>
+        <div class="card-body">
+          <div class="tab-content" id="myTabContent">
+            <div
+              class="tab-pane fade show active"
+              id="upload-file-tab-pane"
+              role="tabpanel"
+              aria-labelledby="upload_file_tab"
+              tabindex="0"
+            >
+              <div class="mb-3">
+                <div id="drop-zone">
+                  Drop file here...
+                  <h5 id="upload_filename" class="card-title"></h5>
+                  <div id="clickHere">
+                    or click here..
+                    <input
+                      type="file"
+                      name="vm_upload_file"
+                      id="vm_upload_file"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div id="" class="mb-3">
+                <div id="" class="col-6">
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="vm_upload_file_submit"
+                  >
+                    <span
+                      id="vm_upload_file_submit_spinner_span"
+                      class="spinner-border spinner-border-sm"
+                      aria-hidden="true"
+                      style="display: none"
+                    ></span>
+                    <span id="vm_upload_file_submit_span" role="status"
+                      >Upload</span
+                    >
+                  </button>
+                </div>
+              </div>
+              <div
+                id="vm_uplaod_result_div"
+                class="alert alert-warning alert-dismissible fade show"
+                role="alert"
+                style="display: none"
+              >
+                <div id="vm_uplaod_result"></div>
+              </div>
+            </div>
+            <div
+              class="tab-pane fade"
+              id="download-file-tab-pane"
+              role="tabpanel"
+              aria-labelledby="download_file_tab"
+              tabindex="0"
+            >
+              <div id="" class="mb-3">
+                <div id="" class="col-6">
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="vm_refresh_download_submit"
+                  >
+                    <span
+                      id="vm_refresh_download_submit_spinner_span"
+                      class="spinner-border spinner-border-sm"
+                      aria-hidden="true"
+                      style="display: none"
+                    ></span>
+                    <span id="vm_refresh_download_submit_span" role="status"
+                      >List files</span
+                    >
+                  </button>
+                </div>
+              </div>
+              <div
+                id="vm_refresh_download_result_div"
+                class="alert alert-warning alert-dismissible fade show"
+                role="alert"
+                style="display: none"
+              >
+                <div id="vm_refresh_download_result"></div>
+              </div>
+              <div id="" class="mb-3">
+                <ul
+                  id="list_files_ul"
+                  class="list-group list-group-flush"
+                  style="max-height: 500px; overflow: auto"
+                ></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const folders = document.querySelectorAll(".folder");
+    folders.forEach((folder) => {
+      folder.addEventListener("click", () => {
+        folder.classList.toggle("open");
+      });
+    });
+  });
+
+  function get_vm_infos(vmName) {
+    $("#list_files_ul").html("");
+    $("#vm_infos_name").html("");
+    $("#vm_infos_guest").html("...");
+    $("#vm_infos_state").html("...");
+    $("#vm_infos_tools_version").html("...");
+    $.ajax({
+      type: "get",
+      url: "/vminfos",
+      data: {
+        vm: vmName,
+      },
+      success: function (data) {
+        if (data.vminfos) {
+          $("#vm_infos_name").html(data.vminfos.name);
+          $("#vm_infos_guest").html(data.vminfos.guest);
+          $("#vm_infos_state").html(data.vminfos.state);
+          $("#vm_infos_tools_version").html(data.vminfos.tools_version);
+        }
+        if (data.error) {
+          $.confirm({
+            title: "Information",
+            content: data.msg,
+            buttons: {
+              cancel: {
+                keys: ["escape"],
+              },
+              logout: {
+                text: "Logout",
+                btnClass: "btn-red",
+                keys: ["enter"],
+                action: function () {
+                  window.location.href = window.location.origin + "/logout";
+                },
+              },
+            },
+          });
+        }
+      },
+      error: function (data) {
+        console.log(data);
+      },
+    });
+  }
+
+  $("#vm_upload_file_submit").click(function (e) {
+    if (!check_config()) {
+      $.alert({
+        title: "Information",
+        content: "Missing fields",
+      });
+      return false;
+    }
+    $("#vm_upload_file_submit_spinner_span").show();
+    e.preventDefault();
+    e.stopPropagation();
+    var data = new FormData();
+    data.append("vm_name", $("#vm_infos_name").text());
+    data.append("vm_login", $("#vm_login").val());
+    data.append("vm_password", $("#vm_password").val());
+    data.append("vm_path", $("#vm_path").val());
+    data.append("vm_upload_file", $("#vm_upload_file").prop("files")[0]);
+    $.ajax({
+      url: "/vm/upload",
+      type: "POST",
+      data: data,
+      cache: false,
+      contentType: false,
+      processData: false,
+      dataType: "json",
+      success: function (res) {
+        $("#vm_upload_file_submit_spinner_span").hide();
+        $("#vm_uplaod_result_div").show();
+        $("#vm_uplaod_result").html(res.msg);
+      },
+      error: function (res) {
+        if (res) {
+          $("#vm_upload_file_submit_spinner_span").hide();
+          $("#vm_uplaod_result_div").show();
+          $("#vm_uplaod_result").html(res);
+        }
+      },
+    });
+    return false;
+  });
+
+  $("#vm_refresh_download_submit").click(function (e) {
+    refresh_files_list();
+  });
+
+  function refresh_files_list(folder_path = "") {
+    if (!check_config((check_input_files = false))) {
+      $.alert({
+        title: "Information",
+        content: "Missing fields",
+      });
+      return false;
+    }
+    $("#vm_refresh_download_submit_spinner_span").show();
+    var data = new FormData();
+    data.append("vm_name", $("#vm_infos_name").text());
+    data.append("vm_login", $("#vm_login").val());
+    data.append("vm_password", $("#vm_password").val());
+    if (!folder_path) {
+      data.append("vm_path", $("#vm_path").val());
+    } else {
+      data.append("vm_path", folder_path);
+      $("#vm_path").val(folder_path);
+    }
+
+    $.ajax({
+      url: "/vm/refresh",
+      type: "POST",
+      data: data,
+      cache: false,
+      contentType: false,
+      processData: false,
+      dataType: "json",
+      success: function (res) {
+        if (res.error) {
+          $.confirm({
+            title: "Information",
+            content: res.msg,
+            buttons: {
+              cancel: {
+                keys: ["escape"],
+              },
+              logout: {
+                text: "Logout",
+                btnClass: "btn-red",
+                keys: ["enter"],
+                action: function () {
+                  window.location.href = window.location.origin + "/logout";
+                },
+              },
+            },
+          });
+        } else if (res.files) {
+          var _os = $("#vm_infos_guest").html().toLowerCase();
+          if (_os.includes("windows")) {
+            _s = "\\\\";
+          } else {
+            _s = "/";
+          }
+          display_list_files(res.files, _s);
+        }
+        $("#vm_refresh_download_submit_spinner_span").hide();
+        $("#vm_refresh_download_result_div").show();
+        $("#vm_refresh_download_result").html(res.msg);
+      },
+      error: function (res) {
+        if (res) {
+          $("#vm_refresh_download_submit_spinner_span").hide();
+          $("#vm_refresh_download_result_div").show();
+          $("#vm_refresh_download_result").html(res);
+        }
+      },
+    });
+  }
+
+  function display_list_files(data, separator = "/") {
+    txt_folder =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-folder" viewBox="0 0 16 16"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a2 2 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4zm4.69-1.707A1 1 0 0 0 6.172 2H2.5a1 1 0 0 0-1 .981l.006.139q.323-.119.684-.12h5.396z"/></svg>';
+    txt_file =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark" viewBox="0 0 16 16"><path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5z"/></svg>';
+    text = "";
+    for (const [key, value] of Object.entries(data)) {
+      if (value == "file") {
+        text +=
+          '<li id="li_' +
+          key +
+          '" onclick="dowload_file(\'' +
+          key +
+          '\')" class="list-group-item list-group-item d-flex align-itens-center download_files">' +
+          txt_file +
+          '<pre style="margin-left:1em;">' +
+          key +
+          '</pre><span id="spinner_' +
+          key.replaceAll(".", "_") +
+          '" class="spinner-border spinner-border-sm" aria-hidden="true" style="display: none;margin-left:1em;"></span></li>';
+      } else if (value == "directory") {
+        _path = $("#vm_path").val().replace(/\\/g, "\\\\") + separator + key;
+        text +=
+          '<li id="li_' +
+          key +
+          '" onclick="refresh_files_list(\'' +
+          _path +
+          separator +
+          '\')" class="list-group-item list-group-item d-flex align-itens-center download_files">' +
+          txt_folder +
+          '<pre style="margin-left:1em;">' +
+          key +
+          "</pre></li>";
+      }
+    }
+    $("#list_files_ul").html(text);
+  }
+
+  function dowload_file(filename) {
+    _t = filename.replaceAll(".", "_");
+    $("#spinner_" + _t).show();
+    var data = new FormData();
+    data.append("vm_name", $("#vm_infos_name").text());
+    data.append("vm_login", $("#vm_login").val());
+    data.append("vm_password", $("#vm_password").val());
+    data.append("vm_path", $("#vm_path").val());
+    data.append("vm_download_file", filename);
+    $.ajax({
+      type: "POST",
+      url: "/vm/download",
+      data: data,
+      cache: false,
+      contentType: false,
+      processData: false,
+      dataType: "json",
+      success: function (data) {
+        if (data) {
+          if (data.error) {
+            $.confirm({
+              title: "Information",
+              content: data.msg,
+              buttons: {
+                cancel: {
+                  keys: ["escape"],
+                },
+                logout: {
+                  text: "Logout",
+                  btnClass: "btn-red",
+                  keys: ["enter"],
+                  action: function () {
+                    window.location.href = window.location.origin + "/logout";
+                  },
+                },
+              },
+            });
+          } else {
+            var link = document.createElement("a");
+            link.href =
+              window.location.origin +
+              "/vm/download?filename=" +
+              data.res.filename;
+            link.download = filename;
+            link.click();
+            $("#vm_refresh_download_result_div").show();
+            $("#vm_refresh_download_result").html(
+              data.msg +
+                ' <a href="' +
+                window.location.origin +
+                "/vm/download?filename=" +
+                data.res.filename +
+                '" class="alert-link">download link</a>'
+            );
+            $("#spinner_" + _t).hide();
+          }
+        }
+      },
+      error: function (data) {
+        console.log("error DL: " + JSON.stringify(data, null, 4));
+        $("#vm_refresh_download_result_div").show();
+        $("#vm_refresh_download_result").html(data);
+        $("#spinner_" + _t).hide();
+      },
+    });
+  }
+
+  function check_config(check_input_files = true) {
+    var ret = true;
+    ret &= $("#vm_infos_name").text() ? true : false;
+    ret &= $("#vm_login").val() ? true : false;
+    ret &= $("#vm_password").val() ? true : false;
+    ret &= $("#vm_path").val() ? true : false;
+    if (check_input_files) {
+      ret &= $("#vm_upload_file").val() ? true : false;
+    }
+
+    return ret;
+  }
+
+  $(function () {
+    var dropZoneId = "drop-zone";
+    var buttonId = "clickHere";
+    var mouseOverClass = "mouse-over";
+
+    var dropZone = $("#" + dropZoneId);
+    var ooleft = dropZone.offset().left;
+    var ooright = dropZone.outerWidth() + ooleft;
+    var ootop = dropZone.offset().top;
+    var oobottom = dropZone.outerHeight() + ootop;
+    var inputFile = dropZone.find("input");
+    document
+      .getElementById(dropZoneId)
+      .addEventListener("dragleave", function (e) {
+        dropZone.removeClass(mouseOverClass);
+      });
+    document.getElementById(dropZoneId).addEventListener(
+      "dragover",
+      function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.addClass(mouseOverClass);
+        var x = e.pageX;
+        var y = e.pageY;
+
+        if (!(x < ooleft || x > ooright || y < ootop || y > oobottom)) {
+          inputFile.offset({ top: y - 15, left: x - 100 });
+        } else {
+          inputFile.offset({ top: -400, left: -400 });
+        }
+      },
+      true
+    );
+
+    if (buttonId != "") {
+      var clickZone = $("#" + buttonId);
+
+      var oleft = clickZone.offset().left;
+      var oright = clickZone.outerWidth() + oleft;
+      var otop = clickZone.offset().top;
+      var obottom = clickZone.outerHeight() + otop;
+
+      $("#" + buttonId).mousemove(function (e) {
+        var x = e.pageX;
+        var y = e.pageY;
+        if (!(x < oleft || x > oright || y < otop || y > obottom)) {
+          inputFile.offset({ top: y - 15, left: x - 160 });
+        } else {
+          inputFile.offset({ top: -400, left: -400 });
+        }
+      });
+    }
+    inputFile.change(function (e) {
+      $("#upload_filename").html(inputFile.prop("files")[0].name);
+    });
+    document.getElementById(dropZoneId).addEventListener(
+      "drop",
+      function (e) {
+        $("#" + dropZoneId).removeClass(mouseOverClass);
+        $("#upload_filename").html(inputFile.prop("files")[0].name);
+      },
+      true
+    );
+  });
+
+  function clear_dowloaded_files() {
+    $.ajax({
+      type: "GET",
+      url: "/vm/clear_downloaded_files",
+      data: {},
+      cache: false,
+      contentType: false,
+      processData: false,
+      dataType: "json",
+      success: function (data) {
+        if (data) {
+          if (data.error) {
+            console.log(data.msg);
+          }
+        }
+      },
+      error: function (data) {
+        console.log("error clear: " + JSON.stringify(data, null, 4));
+      },
+    });
+  }
+
+  function startVM(){
+    var data = new FormData();
+    data.append("vm_name", $("#vm_infos_name").text());
+    $.ajax({
+      url: "/startvm",
+      type: "POST",
+      data: data,
+      cache: false,
+      contentType: false,
+      processData: false,
+      dataType: "json",
+      success: function (data) {
+        if (data.error) {
+          $.confirm({
+            title: "Information",
+            content: data.msg,
+            buttons: {
+              cancel: {
+                keys: ["escape"],
+              },
+              logout: {
+                text: "Logout",
+                btnClass: "btn-red",
+                keys: ["enter"],
+                action: function () {
+                  window.location.href = window.location.origin + "/logout";
+                },
+              },
+            },
+          });
+        }
+        else{
+          $.confirm({
+            title: "Information",
+            content: data.powerstatus,
+          });
+        }
+      },
+      error: function (data) {
+        console.log(data);
+      },
+    });
+  }
+
+
+  function stopVM(){
+    var data = new FormData();
+    data.append("vm_name", $("#vm_infos_name").text());
+    $.ajax({
+      url: "/stopvm",
+      type: "POST",
+      data: data,
+      cache: false,
+      contentType: false,
+      processData: false,
+      dataType: "json",
+      success: function (data) {
+        if (data.error) {
+          $.confirm({
+            title: "Information",
+            content: data.msg,
+            buttons: {
+              cancel: {
+                keys: ["escape"],
+              },
+              logout: {
+                text: "Logout",
+                btnClass: "btn-red",
+                keys: ["enter"],
+                action: function () {
+                  window.location.href = window.location.origin + "/logout";
+                },
+              },
+            },
+          });
+        }
+        else{
+          $.confirm({
+            title: "Information",
+            content: data.powerstatus,
+          });
+        }
+      },
+      error: function (data) {
+        console.log(data);
+      },
+    });
+  }
+  
+  setInterval(clear_dowloaded_files, 3600000); //1h
+</script>
+{% endblock %}
