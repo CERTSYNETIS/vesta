@@ -18,7 +18,6 @@ Web service used to manage virtual machines when it is not accessible:
 
 In docker-compose.yml file set:
 * vcenter IP address in environment
-* secret_key for cookie session encryption in environment
 * replace **xxx** by corresponding files and folder
 * output volume stores downloaded files from VM to then give them to browser
 
