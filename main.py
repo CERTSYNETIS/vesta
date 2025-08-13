@@ -7,6 +7,14 @@ from flask import (
     url_for,
     jsonify,
     send_file,
+    flash
+)
+from flask_login import (
+    LoginManager,
+    login_user,
+    login_required,
+    logout_user,
+    current_user,
 )
 import ssl
 import os
@@ -23,16 +31,21 @@ import atexit
 import uuid
 import re
 import requests
+import secrets
 from werkzeug.utils import secure_filename
 from src.tools.logging import LOGGER, getLogger
+from src.tools.user import User
 from datetime import timedelta, datetime
 from pathlib import Path
+from functools import wraps
 
 # CONFIGURATION
 app = Flask(__name__)
-
-app.secret_key = os.environ.get("secret_key", "s3cr3t")
+app.secret_key = secrets.token_hex(32)
 app.config["UPLOAD_PATH"] = "temp"
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "index"
 
 connection_cache = {}
 vm_cache = {}
@@ -42,44 +55,51 @@ OUTPUT_DIR = "/output"
 VCENTER = os.environ.get("vcenter", "")
 
 
-@app.before_request
-def make_session_permanent():
-    session.permanent = True
-    app.permanent_session_lifetime = timedelta(hours=24)
+# --- Check Admin Decorator ---
+def is_vcenter_connected(func):
+    @wraps(func)
+    def decorated_view(*args, **kwargs):
+        LOGGER.info("[is_vcenter_connected]")
+        if not check_connection(si=connection_cache.get(current_user.id)):
+            connection_cache[current_user.id] = SmartConnect(
+            host=current_user.host,
+            user=current_user.username,
+            pwd=current_user.password,
+            disableSslCertValidation=True,
+        )
+        atexit.register(Disconnect, connection_cache[current_user.id])
+        return func(*args, **kwargs)
+    return decorated_view
+
+@app.errorhandler(404)
+def not_found(e):
+    return redirect(url_for("authenticated"))
 
 
-# CODE
-@app.route("/", methods=["GET"])
+@app.errorhandler(401)
+def not_authorized(e):
+    return redirect(url_for("authenticated"))
+
+
+@app.errorhandler(403)
+def page_forbidden(e):
+    return redirect(url_for("authenticated"))
+
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return redirect(url_for("authenticated"))
+
+
+@app.route("/index", methods=["GET"])
 def index():
     try:
-        if session.get("session_id", None):
-            if not connection_cache.get(session.get("session_id", ""), None):
-                raise Exception("No session_id in connections")
-        else:
-            raise Exception("No session_id in session")
-        return redirect(url_for("authenticated"))
+        return render_template("index.html")
+        #return redirect(url_for("authenticated"))
     except Exception as ex:
         LOGGER.error(f"[index] {ex}")
-        return redirect(url_for("log_out"))
-
-
-def is_connected() -> bool:
-    try:
-        if session.get("session_id", None):
-            if not connection_cache.get(session.get("session_id", ""), None):
-                raise Exception("No session_id in connections")
-            else:
-                if not check_connection(
-                    si=connection_cache.get(session.get("session_id"))
-                ):
-                    raise Exception("Not connected to vcenter")
-        else:
-            raise Exception("No session_id in session")
-        return True
-    except Exception as ex:
-        LOGGER.error(f"[is_connected] {ex}")
-        return False
-
+        return render_template("index.html", errors=str(ex))
+        #return redirect(url_for("log_out"))
 
 @app.route("/auth", methods=["GET", "POST"])
 def authenticate():
@@ -99,80 +119,88 @@ def authenticate():
             disableSslCertValidation=args.get("disable_ssl_verification"),
         )
         atexit.register(Disconnect, service_instance)
+        user = User(
+            user_id=str(uuid.uuid4()),
+            username=str(args.get("user")),
+            password=str(args.get("password")),
+            host=str(args.get("host")),
+        )
+        session["user_data"] = {
+            "id": user.id,
+            "username": user.username,
+            "host": user.host,
+            "password": user.password,
+            "list_vms": dict()
+        }
+        login_user(user, remember=True)  # connection flasklogin
+        
         # Générer un identifiant unique pour la session
-        session_id = str(uuid.uuid4())
+        #session_id = str(uuid.uuid4())
         # Stocker l'instance de connexion dans le cache
-        connection_cache[session_id] = service_instance
+        connection_cache[user.id] = service_instance
 
-        session["session_id"] = session_id
-        session["connect"] = args.copy()
-        session["is_connected"] = True
-        session["list_vms"] = dict()
-
+        #session["session_id"] = session_id
+        #session["connect"] = args.copy()
+        #session["is_connected"] = True
         return redirect(url_for("authenticated"))
-
     except Exception as ex:
-        session["is_connected"] = False
+        #session["is_connected"] = False
         LOGGER.error(f"[authenticate] {ex}")
         return render_template(
             "index.html",
             errors="Cannot complete login due to an incorrect user name or password.",
         )
 
+@login_manager.user_loader
+def load_user(user_id):
+    try:
+        user_data = session.get("user_data")
+        if user_data and str(user_data.get("id", "")) == user_id:
+            return User(
+                user_id=user_data.get("id"),
+                username=user_data.get("username"),
+                password=user_data.get("password"),
+                host=user_data.get("host"),
+            )
+    except Exception as ex:
+        LOGGER.error(f"[load_user] {ex}")
+        return None
 
-@app.route("/authenticated", methods=["GET"])
+
+@app.route("/", methods=["GET"])
+@login_required
+@is_vcenter_connected
 def authenticated():
     try:
-        if not is_connected():
-            raise Exception("Not connected to vcenter instance")
-        # session["list_vms"] = fetch_vm_from_file(
-        #     connection_cache.get(session.get("session_id"))
-        # )
-        session["list_vms"] = parse_service_instance(
-            connection_cache.get(session.get("session_id"))
-        )
-        return render_template("connected.html", data=session["list_vms"])
-
+        current_user.list_vms = parse_service_instance(connection_cache.get(current_user.id))
+        return render_template("connected.html", data=current_user.list_vms)
     except Exception as ex:
         LOGGER.error(f"[authenticated] {ex}")
         return redirect(url_for("log_out"))
 
 
 @app.route("/logout", methods=["GET", "POST"])
+@login_required
 def log_out():
-    session_id = session.get("session_id", "")
-    if session_id in connection_cache:
-        try:
-            # Récupérer et déconnecter l'instance de connexion
-            service_instance = connection_cache.pop(session_id, None)
-            if service_instance:
-                Disconnect(service_instance)
-        except Exception as error:
-            LOGGER.error(f"[logout] {error}")
-
-    session.pop("username", default=None)
-    session.pop("vm", default=None)
-    session.pop("vm_username", default=None)
-    session.pop("session_id", default=None)
-    session.pop("connect", default=None)
-    session.pop("is_connected", default=None)
-
+    Disconnect(connection_cache.get(current_user.id))
+    connection_cache.pop(current_user.id, None)
+    logout_user()
+    session.clear()
     return render_template(
         "index.html", logout_msg="Utilisateur déconnecté avec succès"
     )
 
 
 @app.route("/vminfos", methods=["GET"])
+@login_required
+@is_vcenter_connected
 def get_vm_infos():
     try:
-        if not is_connected():
-            raise Exception("Not connected to vcenter instance")
         vmName = request.args.get("vm", "")
-        content = connection_cache.get(session.get("session_id")).RetrieveContent()
+        content = connection_cache.get(current_user.id).RetrieveContent()
         vm = pchelper.get_obj(content, [vim.VirtualMachine], vmName)
         vm_infos = get_vm_info(virtual_machine=vm)
         return jsonify(vminfos=vm_infos)
-
     except Exception as ex:
         LOGGER.error(f"[get_vm_infos] {ex}")
         _msg = str(ex)
@@ -182,12 +210,12 @@ def get_vm_infos():
 
 
 @app.route("/startvm", methods=["POST"])
+@login_required
+@is_vcenter_connected
 def start_vm():
     try:
-        if not is_connected():
-            raise Exception("Not connected to vcenter instance")
         vmName = request.form.get("vm_name", "")
-        content = connection_cache.get(session.get("session_id")).RetrieveContent()
+        content = connection_cache.get(current_user.id).RetrieveContent()
         vm = pchelper.get_obj(content, [vim.VirtualMachine], vmName)
         vm.PowerOn()
         return jsonify(powerstatus="started", error=False)
@@ -201,12 +229,12 @@ def start_vm():
 
 
 @app.route("/stopvm", methods=["POST"])
+@login_required
+@is_vcenter_connected
 def stop_vm():
     try:
-        if not is_connected():
-            raise Exception("Not connected to vcenter instance")
         vmName = request.form.get("vm_name", "")
-        content = connection_cache.get(session.get("session_id")).RetrieveContent()
+        content = connection_cache.get(current_user.id).RetrieveContent()
         vm = pchelper.get_obj(content, [vim.VirtualMachine], vmName)
         vm.PowerOff()
         return jsonify(powerstatus="Powered Off", error=False)
@@ -220,10 +248,10 @@ def stop_vm():
 
 
 @app.route("/vm/upload", methods=["POST"])
+@login_required
+@is_vcenter_connected
 def upload_vm():
     try:
-        if not is_connected():
-            raise Exception("Not connected to vcenter instance")
         vm_name = request.form.get("vm_name", "")
         vm_login = request.form.get("vm_login", "")
         vm_password = request.form.get("vm_password", "")
@@ -241,7 +269,7 @@ def upload_vm():
             LOGGER.error(f"[upload_vm] file upload error: {file_error}")
             raise Exception("Upload file error")
 
-        content = connection_cache[session.get("session_id")].RetrieveContent()
+        content = connection_cache.get(current_user.id).RetrieveContent()
         vm = pchelper.get_obj(content, [vim.VirtualMachine], vm_name)
         vm_infos = get_vm_info(virtual_machine=vm)
         if (
@@ -292,16 +320,16 @@ def upload_vm():
 
 
 @app.route("/vm/refresh", methods=["POST"])
+@login_required
+@is_vcenter_connected
 def refresh_list_files_vm():
     try:
-        if not is_connected():
-            raise Exception("Not connected to vcenter instance")
         vm_name = request.form.get("vm_name", "")
         vm_login = request.form.get("vm_login", "")
         vm_password = request.form.get("vm_password", "")
         vm_path = request.form.get("vm_path", "")
 
-        content = connection_cache[session.get("session_id")].RetrieveContent()
+        content = connection_cache.get(current_user.id).RetrieveContent()
         vm = pchelper.get_obj(content, [vim.VirtualMachine], vm_name)
         vm_infos = get_vm_info(virtual_machine=vm)
         if (
@@ -330,6 +358,8 @@ def refresh_list_files_vm():
 
 
 @app.route("/vm/logout", methods=["GET"])
+@login_required
+@is_vcenter_connected
 def logout_vm():
     # Destruction de la session de la VM
     session.pop("vm", default=None)
@@ -341,15 +371,14 @@ def logout_vm():
 
 
 @app.route("/refresh", methods=["GET"])
+@login_required
+@is_vcenter_connected
 def refresh():
     try:
-        if not is_connected():
-            raise Exception("Not connected to vcenter instance")
-
-        session["list_vms"] = parse_service_instance(
-            connection_cache[session.get("session_id")]
+        current_user.list_vms = parse_service_instance(
+            connection_cache[current_user.id]
         )
-        return render_template("connected.html", data=session["list_vms"])
+        return render_template("connected.html", data=current_user.list_vms)
     except Exception as ex:
         LOGGER.error(f"[ERROR refresh] {ex}")
         _msg = str(ex)
@@ -359,17 +388,17 @@ def refresh():
 
 
 @app.route("/vm/download", methods=["GET", "POST"])
+@login_required
+@is_vcenter_connected
 def download_file():
     try:
         if request.method == "POST":
-            if not is_connected():
-                raise Exception("Not connected to vcenter instance")
             vm_name = request.form.get("vm_name", "")
             vm_login = request.form.get("vm_login", "")
             vm_password = request.form.get("vm_password", "")
             vm_path = request.form.get("vm_path", "")
             vm_download_file = request.form.get("vm_download_file", "")
-            content = connection_cache[session.get("session_id")].RetrieveContent()
+            content = connection_cache.get(current_user.id).RetrieveContent()
             vm = pchelper.get_obj(content, [vim.VirtualMachine], vm_name)
             vm_infos = get_vm_info(virtual_machine=vm)
             if (
@@ -454,6 +483,7 @@ def list_directory(src: str, onlyfiles: bool = False, onlydirs: bool = False) ->
 
 
 @app.route("/vm/clear_downloaded_files", methods=["GET"])
+@login_required
 def delete_files_in_output_directory() -> bool:
     """
     Delete downloadded files every 24h
