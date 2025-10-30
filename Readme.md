@@ -1,6 +1,14 @@
 <p align="center">
 <img src="docs/Logo-VESTA-noir.png"/>
 </p>
+
+<div align="center">
+
+![Status](https://img.shields.io/badge/status-active-success?style=for-the-badge)
+![Powered By: CERT SYNETIS](https://img.shields.io/badge/Powered_By-CERT_SYNETIS-f80808.svg?style=for-the-badge)
+
+</div>
+
 <h1 align="center">Virtual Entity Service for Transfer & Access</h1>
 
 
